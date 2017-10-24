@@ -34,13 +34,13 @@ This image is primarily useful for quality control checks.
 
 ### Output CSV file
 
-file_name                        | chart_in_file | year | month | row_no | bird_species | 1 | 2 | 3 | 4 | 5 | 6 | ... | 30 | 31
--|
-Boyd_M_Bird_journal_section1-024 | 1             |      |       | 1      |              | 1 | 1 |   |   |   |   | ... |    |
-Boyd_M_Bird_journal_section1-024 | 1             |      |       | 2      |              | 1 | 1 | 1 | 1 | 1 | 1 | ... | 1  | 1
-Boyd_M_Bird_journal_section1-024 | 1             |      |       | 3      |              | 1 | 1 | 1 | 1 | 1 | 1 | ... |    |
-Boyd_M_Bird_journal_section1-024 | 1             |      |       | 4      |              | 1 | 1 |   | 1 |   | 1 | ... |    |
-Boyd_M_Bird_journal_section1-024 | 1             |      |       | 5      |              | 1 | 1 | 1 | 1 | 1 | 1 | ... | 1  | 1
+file_name | chart_in_file | year | month | row_no | bird_species | 1 | 2 | 3 | 4 | 5 | 6 | ... | 30 | 31
+--------- | --------------| ---- | ----- | ------ | ------------ | - | - | - | - | - | - | --- | -- | --
+Boyd_M_Bird_journal_section1-024 | 1 | | | 1 | | 1 | 1 |   |   |   |   | ... |    |
+Boyd_M_Bird_journal_section1-024 | 1 | | | 2 | | 1 | 1 | 1 | 1 | 1 | 1 | ... | 1  | 1
+Boyd_M_Bird_journal_section1-024 | 1 | | | 3 | | 1 | 1 | 1 | 1 | 1 | 1 | ... |    |
+Boyd_M_Bird_journal_section1-024 | 1 | | | 4 | | 1 | 1 |   | 1 |   | 1 | ... |    |
+Boyd_M_Bird_journal_section1-024 | 1 | | | 5 | | 1 | 1 | 1 | 1 | 1 | 1 | ... | 1  | 1
 
 
 ## Brief description of the Hough transform
