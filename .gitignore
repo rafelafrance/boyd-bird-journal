@@ -104,5 +104,4 @@ ENV/
 # Project files
 images/
 raw_data/
-split_images/
 output/
