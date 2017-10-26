@@ -1,7 +1,6 @@
 """Extract images of Boyd's Bird Journal into computer readable form."""
 
 # pylint: disable=no-member
-# qqpylint: disable=invalid-name,too-many-instance-attributes
 
 import os
 import csv
@@ -69,7 +68,7 @@ class Grid:
 
     @property
     def header_row(self):
-        """An alias for the first row."""
+        """Return the row with the column headers."""
         return self.cells[0]
 
     @property
@@ -114,8 +113,9 @@ class Grid:
             if proper_size and days:
                 self.col_labels[-1] = days < 31 and cell.is_col_label()
             elif proper_size:
-                proper_shape = cell.width / cell.height < 2
-                self.col_labels[-1] = proper_shape and cell.is_col_label()
+                # proper_shape = cell.width / cell.height < 2
+                # self.col_labels[-1] = proper_shape and cell.is_col_label()
+                self.col_labels[-1] = cell.is_col_label()
         for i in range(1, len(self.col_labels) - 2):
             if self.col_labels[i - 1] and self.col_labels[i + 1]:
                 self.col_labels[i] = True
@@ -127,7 +127,7 @@ class GridLines:
     near_horiz = np.deg2rad(np.linspace(-2.0, 2.0, num=41))
     near_vert = np.deg2rad(np.linspace(88.0, 92.0, num=41))
 
-    # I'month_idx not sure why this is required?!
+    # I'm not sure why this is required?!
     near_horiz, near_vert = near_vert, near_horiz
 
     def __init__(self, image):
@@ -235,7 +235,7 @@ class Vertical(GridLines):
         super().__init__(image)
         self.size = image.shape[0]
         self.thetas = self.near_vert
-        self.threshold = self.size * 0.25
+        self.threshold = self.size * 0.4
 
     def find_grid_lines(self, add_left_edge=False, add_right_edge=False):
         """Find vertical grid lines and add extra lines."""
