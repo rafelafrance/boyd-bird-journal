@@ -105,3 +105,4 @@ ENV/
 images/
 raw_data/
 output/
+backup/

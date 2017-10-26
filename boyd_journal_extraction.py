@@ -1,8 +1,11 @@
 """Extract images of Boyd's Bird Journal into computer readable form."""
 
+# pylint: disable=no-member
+# qqpylint: disable=invalid-name,too-many-instance-attributes
+
 import os
-import sys
 import csv
+import glob
 from collections import namedtuple
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,9 +17,23 @@ from skimage.transform import probabilistic_hough_line
 
 
 # Using tuples as lightweight objects
-Crop = namedtuple('Crop', 'north south west east')
+Crop = namedtuple('Crop', 'top bottom left right')
 Offset = namedtuple('Offset', 'x y')
 Point = namedtuple('Point', 'x y')
+
+
+def intersection(line1, line2):
+    """Given two lines find their intersection."""
+    (x_1, y_1), (x_2, y_2) = line1
+    (x_3, y_3), (x_4, y_4) = line2
+    denom = (x_1 - x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 - x_4)
+    num1 = x_1 * y_2 - y_1 * x_2
+    num2 = x_3 * y_4 - y_3 * x_4
+    point_x = num1 * (x_3 - x_4) - (x_1 - x_2) * num2
+    point_x /= denom
+    point_y = num1 * (y_3 - y_4) - (y_1 - y_2) * num2
+    point_y /= denom
+    return Point(int(point_x), int(point_y))
 
 
 class Grid:
@@ -37,9 +54,9 @@ class Grid:
             if crop:
                 self.image = util.crop(
                     self.image,
-                    ((crop.north, crop.south), (crop.west, crop.east)))
-                self.offset = Offset(x=self.offset.x + crop.west,
-                                     y=self.offset.y + crop.north)
+                    ((crop.top, crop.bottom), (crop.left, crop.right)))
+                self.offset = Offset(x=self.offset.x + crop.left,
+                                     y=self.offset.y + crop.top)
 
         self.edges = util.invert(self.image)
 
@@ -49,6 +66,11 @@ class Grid:
         self.cells = []
         self.row_labels = []
         self.col_labels = []
+
+    @property
+    def header_row(self):
+        """An alias for the first row."""
+        return self.cells[0]
 
     @property
     def shape(self):
@@ -68,24 +90,35 @@ class Grid:
     def get_cells(self):
         """Build the grid cells from the grid lines."""
         self.cells = []
-        for row, (n, s) in enumerate(zip(self.horiz.lines[:-1],
-                                         self.horiz.lines[1:])):
+        for row, (top, bottom) in enumerate(zip(self.horiz.lines[:-1],
+                                                self.horiz.lines[1:])):
             self.cells.append([])
-            for col, (w, e) in enumerate(zip(self.vert.lines[:-1],
-                                             self.vert.lines[1:])):
-                self.cells[row].append(Cell(self, n, s, w, e))
+            for (left, right) in zip(
+                    self.vert.lines[:-1], self.vert.lines[1:]):
+                self.cells[row].append(Cell(self, top, bottom, left, right))
 
     def get_row_labels(self):
         """Get row labels for the cells."""
         self.row_labels = [row[1].is_row_label() for row in self.cells]
-        for i in range(1, len(self.cells) - 2):
+        for i in range(1, len(self.row_labels) - 2):
             if self.row_labels[i - 1] and self.row_labels[i + 1]:
                 self.row_labels[i] = True
 
     def get_col_labels(self):
         """Get column labels for the cells."""
-        self.col_labels = [cell.is_col_label() for cell in self.cells[0]]
-        self.col_labels[0] = False
+        self.col_labels = []
+        for cell in self.header_row:
+            self.col_labels.append(False)
+            days = sum(self.col_labels)
+            proper_size = cell.width > 8 and cell.height > 8
+            if proper_size and days:
+                self.col_labels[-1] = days < 31 and cell.is_col_label()
+            elif proper_size:
+                proper_shape = cell.width / cell.height < 2
+                self.col_labels[-1] = proper_shape and cell.is_col_label()
+        for i in range(1, len(self.col_labels) - 2):
+            if self.col_labels[i - 1] and self.col_labels[i + 1]:
+                self.col_labels[i] = True
 
 
 class GridLines:
@@ -94,7 +127,7 @@ class GridLines:
     near_horiz = np.deg2rad(np.linspace(-2.0, 2.0, num=41))
     near_vert = np.deg2rad(np.linspace(88.0, 92.0, num=41))
 
-    # I'm not sure why this is required?!
+    # I'month_idx not sure why this is required?!
     near_horiz, near_vert = near_vert, near_horiz
 
     def __init__(self, image):
@@ -118,25 +151,25 @@ class GridLines:
             threshold=self.threshold,
             min_distance=self.min_distance)
 
-    def polar2endpoints(self, angle, dist):
+    def polar2endpoints(self, theta, rho):
         """
         Convert a line given in polar coordinates to line segment end points.
 
         The Hough Transform returns the lines in polar form but matplotlib uses
         line segment end points.
         """
-        if np.abs(angle) > np.pi / 4:
-            x0 = 0
-            x1 = self.image.shape[1]
-            y0 = int(np.round(dist / np.sin(angle)))
-            y1 = int(np.round((dist - x1 * np.cos(angle)) / np.sin(angle)))
+        if np.abs(theta) > np.pi / 4:
+            x_0 = 0
+            x_1 = self.image.shape[1]
+            y_0 = int(np.round(rho / np.sin(theta)))
+            y_1 = int(np.round((rho - x_1 * np.cos(theta)) / np.sin(theta)))
         else:
-            y0 = 0
-            y1 = self.image.shape[0]
-            x0 = int(np.round(dist / np.cos(angle)))
-            x1 = int(np.round((dist - y1 * np.sin(angle)) / np.cos(angle)))
+            y_0 = 0
+            y_1 = self.image.shape[0]
+            x_0 = int(np.round(rho / np.cos(theta)))
+            x_1 = int(np.round((rho - y_1 * np.sin(theta)) / np.cos(theta)))
 
-        return [x0, y0], [x1, y1]
+        return [x_0, y_0], [x_1, y_1]
 
     def add_line(self, point1, point2):
         """
@@ -152,12 +185,17 @@ class GridLines:
         """Sort lines by its distance from the origin."""
         self.lines = sorted(self.lines, key=self.sort_key)
 
-    def find_grid_lines(self):
+    @staticmethod
+    def sort_key(key):
+        """Horizontal lines are sorted by their distance on the y-axis."""
+        return key[0][1]
+
+    def find_line_end_points(self):
         """Find, convert, and sort the grid lines."""
         self.find_lines()
 
-        self.lines = [self.polar2endpoints(t, r)
-                      for (t, r) in zip(self.angles, self.dists)]
+        self.lines = [self.polar2endpoints(theta, rho)
+                      for (theta, rho) in zip(self.angles, self.dists)]
 
         self.sort_lines()
 
@@ -174,7 +212,7 @@ class Horizontal(GridLines):
 
     def find_grid_lines(self, add_top_edge=False, add_bottom_edge=False):
         """Find horizontal grid lines and add extra lines."""
-        super().find_grid_lines()
+        super().find_line_end_points()
 
         if add_top_edge:
             self.add_line([0, 0], [self.image.shape[1], 0])
@@ -184,9 +222,9 @@ class Horizontal(GridLines):
                           [self.image.shape[1], self.image.shape[0]])
 
     @staticmethod
-    def sort_key(x):
+    def sort_key(key):
         """Horizontal lines are sorted by their distance on the y-axis."""
-        return x[0][1]
+        return key[0][1]
 
 
 class Vertical(GridLines):
@@ -197,11 +235,11 @@ class Vertical(GridLines):
         super().__init__(image)
         self.size = image.shape[0]
         self.thetas = self.near_vert
-        self.threshold = self.size * 0.4
+        self.threshold = self.size * 0.25
 
     def find_grid_lines(self, add_left_edge=False, add_right_edge=False):
         """Find vertical grid lines and add extra lines."""
-        super().find_grid_lines()
+        super().find_line_end_points()
 
         if add_left_edge:
             self.add_line([0, 0], [0, self.image.shape[0]])
@@ -211,9 +249,9 @@ class Vertical(GridLines):
                           [self.image.shape[1], self.image.shape[0]])
 
     @staticmethod
-    def sort_key(x):
+    def sort_key(key):
         """Verical lines are sorted by their distance on the x-axis."""
-        return x[0][0]
+        return key[0][0]
 
 
 class Cell:
@@ -224,7 +262,7 @@ class Cell:
     crop = ((4, 4), (4, 4))
     forward_slashes = np.deg2rad(np.linspace(65.0, 25.0, num=161))
 
-    def __init__(self, grid, north=None, south=None, west=None, east=None):
+    def __init__(self, grid, top=None, bottom=None, left=None, right=None):
         """
         Build a cell from the 4 surrounding grid lines.
 
@@ -232,25 +270,14 @@ class Cell:
         intersection of the grid lines.
         """
         self.image = grid.edges
-        self.nw = self.intersection(north, west)
-        self.sw = self.intersection(south, west)
-        self.ne = self.intersection(north, east)
-        self.se = self.intersection(south, east)
-        self.offset = Offset(x=grid.offset.x + self.nw.x,
-                             y=grid.offset.y + self.nw.y)
-
-    def intersection(self, line1, line2):
-        """Given two lines find their intersection."""
-        (x1, y1), (x2, y2) = line1
-        (x3, y3), (x4, y4) = line2
-        denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-        num1 = x1 * y2 - y1 * x2
-        num2 = x3 * y4 - y3 * x4
-        px = num1 * (x3 - x4) - (x1 - x2) * num2
-        px /= denom
-        py = num1 * (y3 - y4) - (y1 - y2) * num2
-        py /= denom
-        return Point(int(px), int(py))
+        self.top_left = intersection(top, left)
+        self.bottom_left = intersection(bottom, left)
+        self.top_right = intersection(top, right)
+        self.bottom_right = intersection(bottom, right)
+        self.width = self.top_right.x - self.top_left.x
+        self.height = self.bottom_left.y - self.top_left.y
+        self.offset = Offset(x=grid.offset.x + self.top_left.x,
+                             y=grid.offset.y + self.top_left.y)
 
     def interior(self, crop=None):
         """
@@ -260,12 +287,14 @@ class Cell:
         surrounding grid lines. That is, we want the cell contents, not the
         grid lines.
         """
-        north = max(self.nw.y, self.ne.y)
-        south = self.image.shape[0] - min(self.sw.y, self.se.y)
-        west = max(self.nw.x, self.sw.x)
-        east = self.image.shape[1] - min(self.ne.x, self.se.x)
+        top = max(self.top_left.y, self.top_right.y)
+        bottom = self.image.shape[0] - min(
+            self.bottom_left.y, self.bottom_right.y)
+        left = max(self.top_left.x, self.bottom_left.x)
+        right = self.image.shape[1] - min(
+            self.top_right.x, self.bottom_right.x)
 
-        inside = util.crop(self.image, ((north, south), (west, east)))
+        inside = util.crop(self.image, ((top, bottom), (left, right)))
 
         if crop:
             inside = util.crop(inside, crop)
@@ -280,7 +309,7 @@ class Cell:
         """Determine if the cell is a column label."""
         inside = self.interior(crop=self.crop)
         lines = self.has_line()
-        return len(lines) or np.mean(inside) > self.col_label_threshold
+        return bool(len(lines)) or np.mean(inside) > self.col_label_threshold
 
     def has_line(self, angles=None):
         """Determine if the cell has a line at any of the given angles."""
@@ -292,61 +321,62 @@ class Cell:
 
     def get_patch(self):
         """Get the cell patch for output."""
-        width = self.ne.x - self.nw.x
-        height = self.sw.y - self.nw.y
-        x = self.offset.x
-        y = self.offset.y
-        return (x, y), width, height
+        width = self.top_right.x - self.top_left.x
+        height = self.bottom_left.y - self.top_left.y
+        offset_x = self.offset.x
+        offset_y = self.offset.y
+        return (offset_x, offset_y), width, height
 
 
 def split_image(image):
     """Split the image into left and right halves."""
-    split = int(image.width / 2)
+    crop_right_side = int(image.width / 2) + 200
+    crop_left_side = image.width - crop_right_side
 
     left_side = Grid(grid=image, crop=Crop(
-        north=0, south=0, west=0, east=split))
-
+        top=0, bottom=0, left=0, right=crop_right_side))
     right_side = Grid(grid=image, crop=Crop(
-        north=0, south=0, west=split, east=0))
+        top=0, bottom=0, left=crop_left_side, right=0))
 
     return left_side, right_side
 
 
-def add_vert_line(image, *, after_line=None, width=200):
+def add_vert_line(image, *, after_this_line=None, width=200):
     """
     Add a vertical line to the grid.
 
     We use this for finding row labels.
     """
-    west = after_line[0][0] + width
-    point1 = [west, 0]
-    point2 = [west, image.height]
+    left = after_this_line[0][0] + width
+    point1 = [left, 0]
+    point2 = [left, image.height]
     image.vert.add_line(point1, point2)
 
 
 def get_month_graph_areas(left_side, right_side):
     """Chop the right side image into images for each month."""
     months = []
-    for r, row in enumerate(left_side.row_labels[1:], 1):
+    for curr_row, row in enumerate(left_side.row_labels[1:], 1):
 
-        if not left_side.row_labels[r - 1] and row:
-            north = left_side.cells[r - 1][1].ne.y
+        prev_row = curr_row - 1
+        if not left_side.row_labels[prev_row] and row:
+            top = left_side.cells[prev_row][1].top_right.y
 
-        if left_side.row_labels[r - 1] and not row:
-            south = left_side.cells[r][1].se.y
+        if left_side.row_labels[prev_row] and not row:
+            bottom = left_side.cells[curr_row][1].bottom_right.y
             months.append(Grid(
                 grid=right_side,
-                crop=Crop(north=north,
-                          south=right_side.height - south,
-                          west=0,
-                          east=0)))
+                crop=Crop(top=top,
+                          bottom=right_side.height - bottom,
+                          left=0,
+                          right=0)))
 
     return months
 
 
 def build_month_graphs(months):
     """Find the grid for each month."""
-    for m, month in enumerate(months):
+    for month in months:
         month.horiz.find_grid_lines(add_bottom_edge=True)
         month.vert.find_grid_lines(add_left_edge=True, add_right_edge=True)
 
@@ -364,8 +394,7 @@ def init_csv_file(csv_path):
         writer.writerow(header)
 
 
-def output_results(
-        in_file, csv_path, full_image, left_side, right_side, months):
+def output_results(in_file, csv_path, full_image, left_side, months):
     """Output the image and CSV data."""
     file_name = os.path.basename(in_file)
 
@@ -375,39 +404,43 @@ def output_results(
     with open(csv_path, 'a', newline='') as csv_file:
         writer = csv.writer(csv_file)
 
-        fig, ax = plt.subplots(figsize=(10, 15.45), frameon=False)
-        ax.imshow(full_image.image, cmap=plt.cm.gray)
-        ax.axis('off')
+        fig, axis = plt.subplots(figsize=(10, 15.45), frameon=False)
+        axis.imshow(full_image.image, cmap=plt.cm.gray)
+        axis.axis('off')
 
         # Color in row labels
-        for r, row in enumerate(left_side.cells):
-            if left_side.row_labels[r]:
-                nw, width, height = row[0].get_patch()
-                ax.add_patch(patches.Rectangle(
-                    nw, width, height, alpha=0.5, facecolor='#feb209'))
+        for curr_row, row in enumerate(left_side.cells):
+            if left_side.row_labels[curr_row]:
+                top_left, width, height = row[0].get_patch()
+                axis.add_patch(patches.Rectangle(
+                    top_left, width, height, alpha=0.5, facecolor='#feb209'))
 
-        for m, month in enumerate(months):
+        for month_idx, month in enumerate(months):
 
             # Color in column labels
-            for col, cell in enumerate(month.cells[0]):
+            for col, cell in enumerate(month.header_row):
                 if month.col_labels[col]:
-                    nw, width, height = cell.get_patch()
-                    ax.add_patch(patches.Rectangle(
-                        nw, width, height, alpha=0.5, facecolor='#feb209'))
+                    top_left, width, height = cell.get_patch()
+                    axis.add_patch(patches.Rectangle(
+                        top_left,
+                        width,
+                        height,
+                        alpha=0.5,
+                        facecolor='#feb209'))
 
             # Color in grid cells with slashes
-            for r, cell_row in enumerate(month.cells[1:-1]):
-                row = [base_name, m + 1, '', '', r + 1, '']
+            for curr_row, cell_row in enumerate(month.cells[1:-1]):
+                row = [base_name, month_idx + 1, '', '', curr_row + 1, '']
                 csv_cells = ['' for i in range(31)]
-                h = -1
+                day = -1
                 for col, cell in enumerate(cell_row):
                     if month.col_labels[col]:
-                        h += 1
+                        day += 1
                         if cell.has_line(Cell.forward_slashes):
-                            csv_cells[h] = 1
-                            nw, width, height = cell.get_patch()
-                            ax.add_patch(patches.Rectangle(
-                                nw, width,
+                            csv_cells[day] = 1
+                            top_left, width, height = cell.get_patch()
+                            axis.add_patch(patches.Rectangle(
+                                top_left, width,
                                 height,
                                 alpha=0.5,
                                 facecolor='#39ad48'))
@@ -430,7 +463,7 @@ def process_image(file_name, csv_path):
     left_side.vert.find_grid_lines(add_left_edge=True,
                                    add_right_edge=True)
 
-    add_vert_line(left_side, after_line=left_side.vert.lines[1])
+    add_vert_line(left_side, after_this_line=left_side.vert.lines[1])
 
     left_side.get_cells()
     left_side.get_row_labels()
@@ -438,9 +471,11 @@ def process_image(file_name, csv_path):
     months = get_month_graph_areas(left_side, right_side)
     build_month_graphs(months)
 
-    output_results(
-        file_name, csv_path, full_image, left_side, right_side, months)
+    output_results(file_name, csv_path, full_image, left_side, months)
 
 
 if __name__ == '__main__':
-    process_image(sys.argv[1], 'output/boyd_bird_journal.csv')
+    CSV_PATH = 'output/boyd_bird_journal.csv'
+    init_csv_file(CSV_PATH)
+    for image_file_name in sorted(glob.glob('images/*.png')):
+        process_image(image_file_name, CSV_PATH)
