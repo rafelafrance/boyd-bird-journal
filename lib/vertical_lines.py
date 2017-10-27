@@ -13,19 +13,6 @@ class Vertical(GridLines):
         self.thetas = self.near_vert
         self.threshold = self.size * 0.4
 
-    def find_grid_lines(self):
-        """Find vertical grid lines and add extra lines."""
-        super().find_line_end_points()
-
-        line = ([0, 0], [0, self.image.shape[0]])
-        if not self.too_close(line, self.lines[0]):
-            self.add_line(line[0], line[1])
-
-        line = ([self.image.shape[1], 0],
-                [self.image.shape[1], self.image.shape[0]])
-        if not self.too_close(line, self.lines[-1]):
-            self.add_line(line[0], line[1])
-
     def insert_line(self, from_this_line, distance=-50):
         """
         Add a vertical line to the grid.

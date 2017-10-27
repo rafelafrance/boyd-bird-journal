@@ -8,6 +8,7 @@ from lib.util import Offset
 from lib.horizontal_lines import Horizontal
 from lib.vertical_lines import Vertical
 from lib.cell import Cell
+from lib.rows import Rows
 
 
 class Grid:
@@ -37,6 +38,8 @@ class Grid:
         self.horiz = Horizontal(self.edges)
         self.vert = Vertical(self.edges)
 
+        self.rows = None
+
         self.cells = []
         self.row_labels = []
         self.col_labels = []
@@ -47,11 +50,6 @@ class Grid:
         return self.cells[0]
 
     @property
-    def shape(self):
-        """Make it easy to get the image shape."""
-        return self.edges.shape
-
-    @property
     def width(self):
         """Make it easy to get the image width."""
         return self.horiz.size
@@ -60,6 +58,10 @@ class Grid:
     def height(self):
         """Make it easy to get the image height."""
         return self.vert.size
+
+    def get_rows(self):
+        """Build the object holding the array of rows."""
+        self.rows = Rows(self)
 
     def get_cells(self):
         """Build the grid cells from the grid lines."""

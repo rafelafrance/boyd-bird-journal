@@ -77,7 +77,7 @@ class GridLines:
         """Horizontal lines are sorted by their distance on the y-axis."""
         return key[0][1]
 
-    def find_line_end_points(self):
+    def find_grid_lines(self):
         """Find, convert, and sort the grid lines."""
         self.find_lines()
 

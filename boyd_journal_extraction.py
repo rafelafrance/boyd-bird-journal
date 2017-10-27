@@ -12,32 +12,30 @@ from lib.grid import Grid
 from lib.cell import Cell
 
 
-def split_image(image):
+def split_image(full_image):
     """Split the image into left and right halves."""
-    crop_right_side = int(image.width / 2) + 200
-    crop_left_side = image.width - crop_right_side
+    crop_right_side = int(full_image.width / 2) + 200
+    crop_left_side = full_image.width - crop_right_side
 
-    left_side = Grid(grid=image, crop=Crop(
-        top=0, bottom=0, left=0, right=crop_right_side))
-
-    right_side = Grid(grid=image, crop=Crop(
+    right_side = Grid(grid=full_image, crop=Crop(
         top=0, bottom=0, left=crop_left_side, right=0))
 
-    return left_side, right_side
+    return right_side
 
 
-def get_month_graph_areas(left_side, right_side):
+def get_month_graph_areas(full_image, right_side):
     """Chop the right side image into images for each month."""
     months = []
 
-    for curr_row, row in enumerate(left_side.row_labels[1:-1], 1):
+    for curr_row, row in enumerate(full_image.row_labels[1:-1], 1):
 
         prev_row = curr_row - 1
-        if not left_side.row_labels[prev_row] and row:
-            top = left_side.cells[prev_row][1].top_right.y
+        if not full_image.row_labels[prev_row] and row:
+            top = min(full_image.cells[prev_row][0].top_right.y,
+                      full_image.cells)
 
-        if left_side.row_labels[prev_row] and not row:
-            bottom = left_side.cells[curr_row + 1][1].bottom_right.y
+        if full_image.row_labels[prev_row] and not row:
+            bottom = full_image.cells[curr_row + 1][1].bottom_right.y
             months.append(Grid(
                 grid=right_side,
                 crop=Crop(top=top,
@@ -131,21 +129,21 @@ def process_image(file_name, csv_path):
     print(f'Processing: {file_name}')
     full_image = Grid(file_name=file_name)
 
-    left_side, right_side = split_image(full_image)
+    right_side = split_image(full_image)
 
-    left_side.horiz.find_grid_lines()
-    left_side.vert.find_grid_lines()
+    full_image.horiz.find_grid_lines()
+    full_image.vert.find_grid_lines()
 
-    left_side.vert.insert_line(from_this_line=left_side.vert.lines[1],
-                               distance=-50)
+    full_image.vert.insert_line(from_this_line=full_image.vert.lines[1],
+                                distance=-50)
 
-    left_side.get_cells()
-    left_side.get_row_labels()
+    full_image.get_cells()
+    full_image.get_row_labels()
 
-    months = get_month_graph_areas(left_side, right_side)
+    months = get_month_graph_areas(full_image, right_side)
     build_month_graphs(months)
 
-    plt = output_results(file_name, csv_path, full_image, left_side, months)
+    plt = output_results(file_name, csv_path, full_image, months)
     plt.close()
 
 
