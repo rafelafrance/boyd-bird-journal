@@ -56,7 +56,7 @@ The basic idea of the algorithm is:
 
 See the [Wikipedia Page](https://en.wikipedia.org/wiki/Hough_transform) for a more detailed description.
 
-## Algorithm outline
+## Heuristics outline
 
 As described in the summary the images are distorted and inconsistent. The general idea is to chop the image into workable pieces and parse that. Once we have parsed the image pieces we will reassemble the image for output. See the image below.
 
