@@ -17,8 +17,7 @@ def get_left_side(grid):
     right = int(grid.width / 2)
     left_side = Grid(
         grid=grid, crop=Crop(left=0, right=right, top=0, bottom=0))
-    left_side.horiz.find_grid_lines()
-    left_side.vert.find_grid_lines()
+    left_side.find_grid_lines()
     left_side.vert.insert_line(
         from_this_line=left_side.vert.lines[0], distance=-80)
     left_side.get_cells()
@@ -76,8 +75,7 @@ def get_month_graph_areas(grid, left_side):
 def build_month_graphs(months):
     """Find the grid for each month."""
     for month in months:
-        month.horiz.find_grid_lines()
-        month.vert.find_grid_lines()
+        month.find_grid_lines()
 
         # Insert left edge of the graph
         month.vert.insert_line(month.vert.lines[0], distance=-60)

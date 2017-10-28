@@ -58,6 +58,11 @@ class Grid:
         """Make it easy to get the image height."""
         return self.vert.size
 
+    def find_grid_lines(self):
+        """Find horizontal and vertical grid lines."""
+        self.horiz.find_grid_lines()
+        self.vert.find_grid_lines()
+
     def get_cells(self):
         """Build the grid cells from the grid lines."""
         self.cells = []
