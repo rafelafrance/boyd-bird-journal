@@ -8,7 +8,6 @@ from lib.util import Offset
 from lib.horizontal_lines import Horizontal
 from lib.vertical_lines import Vertical
 from lib.cell import Cell
-from lib.rows import Rows
 
 
 class Grid:
@@ -59,23 +58,19 @@ class Grid:
         """Make it easy to get the image height."""
         return self.vert.size
 
-    def get_rows(self):
-        """Build the object holding the array of rows."""
-        self.rows = Rows(self)
-
     def get_cells(self):
         """Build the grid cells from the grid lines."""
         self.cells = []
         for row, (top, bottom) in enumerate(zip(self.horiz.lines[:-1],
                                                 self.horiz.lines[1:])):
             self.cells.append([])
-            for (left, right) in zip(
-                    self.vert.lines[:-1], self.vert.lines[1:]):
+            for (left, right) in zip(self.vert.lines[:-1],
+                                     self.vert.lines[1:]):
                 self.cells[row].append(Cell(self, top, bottom, left, right))
 
     def get_row_labels(self):
         """Get row labels for the cells."""
-        self.row_labels = [row[1].is_label() for row in self.cells]
+        self.row_labels = [row[0].is_label() for row in self.cells]
 
         # Remove isolated labels
         for i in range(1, len(self.row_labels) - 2):
@@ -84,18 +79,20 @@ class Grid:
 
     def get_col_labels(self):
         """Get column labels for the cells."""
-        self.col_labels = []
 
-        for cell in self.header_row:
-            days = sum(self.col_labels)
-            self.col_labels.append(days < 31 and cell.is_label())
+        labels = [cell.is_label() for cell in self.header_row]
 
         # Remove isolated labels
-        for i in range(1, len(self.col_labels) - 2):
-            if self.col_labels[i - 1] == self.col_labels[i + 1]:
-                self.col_labels[i] = self.col_labels[i - 1]
+        for i in range(1, len(labels) - 2):
+            if labels[i - 1] == labels[i + 1]:
+                labels[i] = labels[i - 1]
 
         # HACK: The first column is not a header if there are no values in it
-        first_label = [i for i, val in enumerate(self.col_labels) if val][0]
-        self.col_labels[first_label] = sum([len(row[first_label].has_line(
+        first_label = [i for i, val in enumerate(labels) if val][0]
+        labels[first_label] = sum([len(row[first_label].has_line(
             Cell.forward_slashes)) for row in self.cells[1:]]) > 0
+
+        # Limit number of days to no more than 31
+        labels = [v and sum(labels[:i]) < 31 for i, v in enumerate(labels)]
+
+        self.col_labels = labels

@@ -42,17 +42,17 @@ class Cell:
         surrounding grid lines. That is, we want the cell contents, not the
         grid lines.
         """
-        top = max(self.top_left.y, self.top_right.y)
-        bottom = self.image.shape[0] - min(
-            self.bottom_left.y, self.bottom_right.y)
-        left = max(self.top_left.x, self.bottom_left.x)
-        right = self.image.shape[1] - min(
-            self.top_right.x, self.bottom_right.x)
+        top = max(0, self.top_left.y, self.top_right.y)
+        bottom = max(0, self.image.shape[0] - min(
+            self.bottom_left.y, self.bottom_right.y))
+        left = max(0, self.top_left.x, self.bottom_left.x)
+        right = max(0, self.image.shape[1] - min(
+            self.top_right.x, self.bottom_right.x))
 
         inside = util.crop(self.image, ((top, bottom), (left, right)))
 
-        if crop and inside.shape[0] > (crop.left + crop.right) \
-                and inside.shape[1] > (crop.top + crop.bottom):
+        if crop and inside.shape[1] > (crop.right + crop.left) \
+                and inside.shape[0] > (crop.bottom + crop.top):
             inside = util.crop(
                 inside,
                 ((crop.top, crop.bottom), (crop.left, crop.right)))

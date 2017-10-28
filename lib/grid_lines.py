@@ -85,14 +85,3 @@ class GridLines:
                       for (theta, rho) in zip(self.angles, self.dists)]
 
         self.sort_lines()
-
-    @staticmethod
-    def too_close(line1, line2, threshold=40):
-        """Find lines that are too close to each other."""
-        p1, p2 = line1  # Get line end points
-        p3, p4 = line2  # Get line end points
-
-        dist1 = np.sqrt((p1[0] - p3[0])**2 + (p1[1] - p3[1])**2)
-        dist2 = np.sqrt((p2[0] - p4[0])**2 + (p2[1] - p4[1])**2)
-
-        return min(dist1, dist2) < threshold
