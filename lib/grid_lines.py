@@ -5,6 +5,7 @@
 
 import numpy as np
 from skimage.transform import hough_line, hough_line_peaks
+from lib.util import too_close
 
 
 class GridLines:
@@ -12,8 +13,8 @@ class GridLines:
 
     min_distance = 30
 
-    near_horiz = np.deg2rad(np.linspace(-3.0, 3.0, num=61))
-    near_vert = np.deg2rad(np.linspace(87.0, 93.0, num=61))
+    near_horiz = np.deg2rad(np.linspace(-5.0, 5.0, num=201))
+    near_vert = np.deg2rad(np.linspace(85.0, 95.0, num=201))
 
     # I'm not sure why this is required?!
     near_horiz, near_vert = near_vert, near_horiz
@@ -85,3 +86,10 @@ class GridLines:
                       for (theta, rho) in zip(self.angles, self.dists)]
 
         self.sort_lines()
+
+        lines = [self.lines[0]]
+        for ln1, ln2 in zip(self.lines[:-1], self.lines[1:]):
+            if not too_close(ln1, ln2):
+                lines.append(ln2)
+
+        self.lines = lines

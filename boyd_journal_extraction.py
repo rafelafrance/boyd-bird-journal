@@ -13,9 +13,8 @@ from lib.cell import Cell
 
 
 def get_left_side(grid):
-    """Get the left most edge of the grid."""
-    point1, _ = grid.vert.lines[0]
-    right = grid.width - point1[0] - 400
+    """Get the left side of the grid."""
+    right = int(grid.width / 2)
     left_side = Grid(
         grid=grid, crop=Crop(left=0, right=right, top=0, bottom=0))
     left_side.horiz.find_grid_lines()
@@ -42,8 +41,8 @@ def crop_rows(grid, top_line, bottom_line):
     bottom_left = intersection(bottom_line, left_line)
     bottom_right = intersection(bottom_line, right_line)
 
-    top = min(top_left.y, top_right.y) - 4
-    bottom = grid.height - max(bottom_left.y, bottom_right.y) + 4
+    top = min(top_left.y, top_right.y) - 20
+    bottom = grid.height - max(bottom_left.y, bottom_right.y) + 40
     left = max(top_left.x, bottom_left.x)
 
     return Grid(grid=grid,
@@ -55,16 +54,21 @@ def get_month_graph_areas(grid, left_side):
     months = []
 
     top_line = left_side.horiz.lines[0]
+    start_idx = 0
     for label_idx, label in enumerate(left_side.row_labels[1:], 1):
 
         prev_idx = label_idx - 1
         prev_label = left_side.row_labels[prev_idx]
 
         if label and not prev_label:
+            start_idx = label_idx
             top_line = left_side.horiz.lines[label_idx - 1]
         elif not label and prev_label:
-            bottom_line = left_side.horiz.lines[label_idx + 1]
-            months.append(crop_rows(grid, top_line, bottom_line))
+            row_count = label_idx - start_idx
+            if row_count > 5:
+                bottom_line = left_side.horiz.lines[label_idx + 1]
+                months.append(crop_rows(grid, top_line, bottom_line))
+            start_idx = 0
 
     return months
 
@@ -114,7 +118,7 @@ def color_grid_cells(month, month_idx, ax, base_name, writer):
 
     Also write row data to the CSV file.
     """
-    for row_idx, cell_row in enumerate(month.cells[1:-1]):
+    for row_idx, cell_row in enumerate(month.cells[1:]):
         csv_row = [base_name, month_idx + 1, '', '', row_idx + 1, '']
         csv_cells = ['' for i in range(31)]
         day = -1
@@ -160,9 +164,6 @@ def process_image(file_name, csv_path):
     """Process one image."""
     print(f'Processing: {file_name}')
     grid = Grid(file_name=file_name)
-
-    grid.horiz.find_grid_lines()
-    grid.vert.find_grid_lines()
 
     left_side = get_left_side(grid)
 

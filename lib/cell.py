@@ -13,7 +13,7 @@ class Cell:
     """Data and functions for dealing with cell contents."""
 
     row_label_threshold = 20
-    col_label_threshold = 20
+    col_label_threshold = 15
     crop = Crop(top=4, bottom=4, left=4, right=4)
     forward_slashes = np.deg2rad(np.linspace(65.0, 25.0, num=161))
 
@@ -64,14 +64,16 @@ class Cell:
         if not crop:
             crop = self.crop
         inside = self.interior(crop=crop)
-        lines = self.has_line()
+        lines = self.has_line(line_length=15)
+        if not min(inside.shape):
+            return False
         return bool(len(lines)) or np.mean(inside) > self.col_label_threshold
 
-    def has_line(self, angles=None):
+    def has_line(self, angles=None, line_length=15):
         """Determine if the cell has a line at any of the given angles."""
         return probabilistic_hough_line(
             self.interior(crop=self.crop),
-            line_length=15,
+            line_length=line_length,
             line_gap=2,
             theta=angles)
 

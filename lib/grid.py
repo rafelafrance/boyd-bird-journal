@@ -79,7 +79,6 @@ class Grid:
 
     def get_col_labels(self):
         """Get column labels for the cells."""
-
         labels = [cell.is_label() for cell in self.header_row]
 
         # Remove isolated labels
@@ -87,12 +86,18 @@ class Grid:
             if labels[i - 1] == labels[i + 1]:
                 labels[i] = labels[i - 1]
 
-        # HACK: The first column is not a header if there are no values in it
+        # The first column is not a header if there are no values in it
         first_label = [i for i, val in enumerate(labels) if val][0]
         labels[first_label] = sum([len(row[first_label].has_line(
             Cell.forward_slashes)) for row in self.cells[1:]]) > 0
 
         # Limit number of days to no more than 31
         labels = [v and sum(labels[:i]) < 31 for i, v in enumerate(labels)]
+
+        # Fill in the column labels
+        first_label = [i for i, val in enumerate(labels) if val][0]
+        last_label = [i for i, val in enumerate(labels) if val][-1]
+        for i in range(first_label, last_label):
+            labels[i] = True
 
         self.col_labels = labels
