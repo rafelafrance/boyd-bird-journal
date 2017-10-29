@@ -14,11 +14,7 @@ class Horizontal(GridLines):
         self.threshold = self.size * 0.4
 
     def insert_line(self, from_this_line, distance=-50):
-        """
-        Add a horizontal line to the grid.
-
-        We use this for finding labels.
-        """
+        """Insert a horizontal grid line relative to another line."""
         point1 = [0, from_this_line[0][1] + distance]
         point2 = [self.size, from_this_line[1][1] + distance]
         self.add_line(point1, point2)

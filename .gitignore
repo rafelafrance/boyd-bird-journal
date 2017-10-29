@@ -7,10 +7,10 @@ __pycache__
 
 temp*
 junk*
+output*
 
 venv/
 input/
-output/
 log/
 old/
 images/

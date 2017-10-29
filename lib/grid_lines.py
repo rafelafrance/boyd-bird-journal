@@ -11,10 +11,10 @@ from lib.util import too_close
 class GridLines:
     """The base object for both horizontal and vertical grid lines."""
 
-    min_distance = 30
+    min_distance = 40
 
-    near_horiz = np.deg2rad(np.linspace(-5.0, 5.0, num=201))
-    near_vert = np.deg2rad(np.linspace(85.0, 95.0, num=201))
+    near_horiz = np.deg2rad(np.linspace(-2.0, 2.0, num=41))
+    near_vert = np.deg2rad(np.linspace(88.0, 92.0, num=41))
 
     # I'm not sure why this is required?!
     near_horiz, near_vert = near_vert, near_horiz
@@ -60,12 +60,7 @@ class GridLines:
         return [x0, y0], [x1, y1]
 
     def add_line(self, point1, point2):
-        """
-        Add a line to the list of lines.
-
-        Because of the way we use line pair for finding grid cells we need to
-        keep the list of lines sorted.
-        """
+        """Add a line to the list of lines."""
         self.lines.append((point1, point2))
         self.sort_lines()
 

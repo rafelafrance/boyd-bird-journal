@@ -14,11 +14,7 @@ class Vertical(GridLines):
         self.threshold = self.size * 0.4
 
     def insert_line(self, from_this_line, distance=-50):
-        """
-        Add a vertical line to the grid.
-
-        We use this for finding labels.
-        """
+        """Insert a vertical grid line relative to another line."""
         point1 = [from_this_line[0][0] + distance, 0]
         point2 = [from_this_line[1][0] + distance, self.size]
         self.add_line(point1, point2)

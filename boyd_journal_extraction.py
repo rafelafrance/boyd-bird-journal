@@ -18,8 +18,7 @@ def get_left_side(grid):
     left_side = Grid(
         grid=grid, crop=Crop(left=0, right=right, top=0, bottom=0))
     left_side.find_grid_lines()
-    left_side.vert.insert_line(
-        from_this_line=left_side.vert.lines[0], distance=-80)
+    left_side.vert_insert_line(0, distance=-80)
     left_side.get_cells()
     left_side.get_row_labels()
     return left_side
@@ -44,7 +43,7 @@ def crop_rows(grid, top_line, bottom_line):
     bottom = grid.height - max(bottom_left.y, bottom_right.y) + 40
     left = max(top_left.x, bottom_left.x)
 
-    return Grid(grid=grid,
+    return Grid(grid=grid, split=True,
                 crop=Crop(top=top, bottom=bottom, left=left, right=0))
 
 
@@ -69,6 +68,12 @@ def get_month_graph_areas(grid, left_side):
                 months.append(crop_rows(grid, top_line, bottom_line))
             start_idx = 0
 
+    if start_idx:
+        row_count = len(left_side.row_labels) - start_idx - 1
+        if row_count > 5:
+            bottom_line = left_side.horiz.lines[-1]
+            months.append(crop_rows(grid, top_line, bottom_line))
+
     return months
 
 
@@ -78,11 +83,11 @@ def build_month_graphs(months):
         month.find_grid_lines()
 
         # Insert left edge of the graph
-        month.vert.insert_line(month.vert.lines[0], distance=-60)
+        month.vert_insert_line(0, distance=-60)
 
         # Insert right edge of the graph
         right_edge = ([month.width, 0], [month.width, month.height])
-        month.vert.add_line(right_edge[0], right_edge[1])
+        month.vert_add_line(right_edge[0], right_edge[1])
 
         month.get_cells()
         month.get_col_labels()
@@ -174,7 +179,7 @@ def process_image(file_name, csv_path):
 
 def init_csv_file(csv_path):
     """Initialize the CSV file."""
-    with open(csv_path, 'a', newline='') as csv_file:
+    with open(csv_path, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         header = ['file_name', 'chart_in_file',
                   'year', 'month', 'row_no', 'bird_species']

@@ -4,7 +4,7 @@
 
 from skimage import io
 from skimage import util
-from lib.util import Offset
+from lib.util import Offset, Crop
 from lib.horizontal_lines import Horizontal
 from lib.vertical_lines import Vertical
 from lib.cell import Cell
@@ -17,7 +17,9 @@ class Grid:
     Contains horizontal and vertical grid lines as well as the grid cells.
     """
 
-    def __init__(self, *, file_name=None, grid=None, crop=None):
+    split_limit = 32
+
+    def __init__(self, *, file_name=None, grid=None, crop=None, split=False):
         """Make a new gird from either an image file or another grid."""
         if file_name:
             self.image = io.imread(file_name)
@@ -43,10 +45,15 @@ class Grid:
         self.row_labels = []
         self.col_labels = []
 
+        self.top = None
+        self.bottom = None
+        self.split = split
+        self.mid_point = 999
+
     @property
     def header_row(self):
         """Return the row with the column headers."""
-        return self.cells[0]
+        return self.top.header_row if self.top else self.cells[0]
 
     @property
     def width(self):
@@ -63,46 +70,94 @@ class Grid:
         self.horiz.find_grid_lines()
         self.vert.find_grid_lines()
 
+        if self.split and len(self.horiz.lines) > self.split_limit:
+            self.mid_point = int(len(self.horiz.lines) / 2)
+            point1, _ = self.horiz.lines[self.mid_point]
+            split = point1[1]
+
+            self.top = Grid(
+                grid=self,
+                crop=Crop(top=0,
+                          bottom=self.height - split - 40,
+                          left=0,
+                          right=0))
+            self.top.find_grid_lines()
+
+            self.bottom = Grid(
+                grid=self,
+                crop=Crop(top=split - 40,
+                          bottom=0,
+                          left=0,
+                          right=0))
+            self.bottom.find_grid_lines()
+            if len(self.bottom.vert.lines) != len(self.top.vert.lines):
+                self.bottom = None
+
     def get_cells(self):
         """Build the grid cells from the grid lines."""
-        self.cells = []
-        for row, (top, bottom) in enumerate(zip(self.horiz.lines[:-1],
-                                                self.horiz.lines[1:])):
-            self.cells.append([])
-            for (left, right) in zip(self.vert.lines[:-1],
-                                     self.vert.lines[1:]):
-                self.cells[row].append(Cell(self, top, bottom, left, right))
+        top_cells = []
+        bottom_cells = []
+        for row_idx, (top, bottom) in enumerate(zip(self.horiz.lines[:-1],
+                                                    self.horiz.lines[1:])):
+            if row_idx < self.mid_point:
+                cells = top_cells
+            elif row_idx >= self.mid_point:
+                cells = bottom_cells
+
+            cells.append([])
+            for (left, right) in zip(
+                    self.vert.lines[:-1], self.vert.lines[1:]):
+                cells[-1].append(Cell(self, top, bottom, left, right))
+
+        if self.top:
+            self.top.get_cells()
+            top_cells = self.top.cells
+        if self.bottom:
+            self.bottom.get_cells()
+            bottom_cells = self.bottom.cells
+
+        self.cells = top_cells + bottom_cells
+
+    def vert_add_line(self, point1, point2):
+        """Add a vertical line to the grid."""
+        self.vert.add_line(point1, point2)
+        if self.top:
+            self.top.vert.add_line(point1, (point2[0], self.top.vert.size))
+        if self.bottom:
+            self.bottom.vert.add_line(
+                point1, (point2[0], self.bottom.vert.size))
+
+    def vert_insert_line(self, line_idx, distance=-50):
+        """Insert a vertical grid line relative to another line."""
+        self.vert.insert_line(self.vert.lines[line_idx], distance=distance)
+        if self.top:
+            self.top.vert.insert_line(
+                self.top.vert.lines[line_idx], distance=distance)
+        if self.bottom:
+            self.bottom.vert.insert_line(
+                self.bottom.vert.lines[line_idx], distance=distance)
 
     def get_row_labels(self):
         """Get row labels for the cells."""
         self.row_labels = [row[0].is_label() for row in self.cells]
 
         # Remove isolated labels
-        for i in range(1, len(self.row_labels) - 2):
-            if self.row_labels[i - 1] == self.row_labels[i + 1]:
-                self.row_labels[i] = self.row_labels[i - 1]
+        for i in range(2, len(self.row_labels) - 3):
+            if (self.row_labels[i - 2] or self.row_labels[i - 1]) and (
+                    self.row_labels[i + 1] or self.row_labels[i + 2]):
+                self.row_labels[i] = True
 
     def get_col_labels(self):
         """Get column labels for the cells."""
         labels = [cell.is_label() for cell in self.header_row]
 
-        # Remove isolated labels
-        for i in range(1, len(labels) - 2):
-            if labels[i - 1] == labels[i + 1]:
-                labels[i] = labels[i - 1]
+        first_label = [i for i, val in enumerate(labels) if val][0]
 
         # The first column is not a header if there are no values in it
-        first_label = [i for i, val in enumerate(labels) if val][0]
         labels[first_label] = sum([len(row[first_label].has_line(
             Cell.forward_slashes)) for row in self.cells[1:]]) > 0
 
-        # Limit number of days to no more than 31
-        labels = [v and sum(labels[:i]) < 31 for i, v in enumerate(labels)]
-
-        # Fill in the column labels
+        # Set the first 31 columns to be a label
         first_label = [i for i, val in enumerate(labels) if val][0]
-        last_label = [i for i, val in enumerate(labels) if val][-1]
-        for i in range(first_label, last_label):
-            labels[i] = True
-
-        self.col_labels = labels
+        self.col_labels = [(i >= first_label and i < first_label + 31)
+                           for i, _ in enumerate(labels)]

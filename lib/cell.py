@@ -16,6 +16,8 @@ class Cell:
     col_label_threshold = 15
     crop = Crop(top=4, bottom=4, left=4, right=4)
     forward_slashes = np.deg2rad(np.linspace(65.0, 25.0, num=161))
+    label_lines = np.deg2rad(np.linspace(0.0, 65.0, num=181))
+    label_lines += np.deg2rad(np.linspace(-65.0, 0.0, num=181))
 
     def __init__(self, grid, top=None, bottom=None, left=None, right=None):
         """
@@ -43,11 +45,11 @@ class Cell:
         grid lines.
         """
         top = max(0, self.top_left.y, self.top_right.y)
-        bottom = max(0, self.image.shape[0] - min(
-            self.bottom_left.y, self.bottom_right.y))
+        bottom = max(0, self.image.shape[0]
+                     - min(self.bottom_left.y, self.bottom_right.y))
         left = max(0, self.top_left.x, self.bottom_left.x)
-        right = max(0, self.image.shape[1] - min(
-            self.top_right.x, self.bottom_right.x))
+        right = max(0, self.image.shape[1]
+                    - min(self.top_right.x, self.bottom_right.x))
 
         inside = util.crop(self.image, ((top, bottom), (left, right)))
 
@@ -64,7 +66,7 @@ class Cell:
         if not crop:
             crop = self.crop
         inside = self.interior(crop=crop)
-        lines = self.has_line(line_length=15)
+        lines = self.has_line(self.label_lines, line_length=12)
         if not min(inside.shape):
             return False
         return bool(len(lines)) or np.mean(inside) > self.col_label_threshold
