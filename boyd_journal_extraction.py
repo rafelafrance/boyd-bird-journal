@@ -188,7 +188,7 @@ def init_csv_file(csv_path):
 
 
 if __name__ == '__main__':
-    CSV_PATH = 'output/boyd_bird_journal.csv'
+    CSV_PATH = 'output/boyd_bird_journal-v0.1.0.csv'
     init_csv_file(CSV_PATH)
     for image_file_name in sorted(glob.glob('images/*.png')):
         process_image(image_file_name, CSV_PATH)

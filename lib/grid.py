@@ -78,14 +78,14 @@ class Grid:
             self.top = Grid(
                 grid=self,
                 crop=Crop(top=0,
-                          bottom=self.height - split - 40,
+                          bottom=self.height - split - 20,
                           left=0,
                           right=0))
             self.top.find_grid_lines()
 
             self.bottom = Grid(
                 grid=self,
-                crop=Crop(top=split - 40,
+                crop=Crop(top=split - 20,
                           bottom=0,
                           left=0,
                           right=0))
