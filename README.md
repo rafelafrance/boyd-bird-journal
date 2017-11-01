@@ -58,13 +58,13 @@ See the [Wikipedia Page](https://en.wikipedia.org/wiki/Hough_transform) for a mo
 
 ## Heuristics outline
 
-As described in the summary the images are distorted and inconsistent. The general idea is to chop the image into workable pieces and parse that. Once we have parsed the image pieces we will reassemble the image for output. See the image below.
+As described in the summary the images are distorted and inconsistent. The general idea is to chop the image into workable pieces and parse that. Once we have parsed the image pieces we will reassemble the image for output. See below.
 
 1. Chop the image into left and right halves. The left side will contain row labels and the right hand side contains the data grids with the slashes.
-1. Find the grid lines and grid cells in the left side. (red and yellow lines) We use the *Hough Transform* to look for both vertical and horizontal grid lines. We do one pass for the horizontal lines and one for the vertical lines. Cells are the area between pairs of adjacent horizontal grid lines and pairs of vertical grid lines.
-1. Examine the 2nd cell of every row and look for writing in it. Because this particular cell is very wide we will only look at the first 200 pixels of that cell. We will say that a cell with an average pixel brightness above a threshold contains writing.
+1. Find the grid lines and grid cells in the left side. (red and magenta lines) We use the *Hough Transform* to look for both vertical and horizontal grid lines. We do one pass for the horizontal lines and one for the vertical lines. Cells are the area between pairs of adjacent horizontal grid lines and pairs of vertical grid lines.
+1. Examine the 1st cell of every row and look for writing in it. Because this particular cell is wide we will only look at the last ~80 pixels of that cell. We will use both a mean pixel brightness and the *Probabilistic Hough Transform* for this.
 1. We then group the rows with contiguous row labels into grids. In the image below there are two grids. We are assuming that each grid represents a month of data, days 1 up to 31.
-1. Find the grid lines and cells for each grid on the right side of the image. (red and green lines) The uses the *Hough Transform* mentioned above.
+1. Find the grid lines and cells for each grid on the right side of the image. (red and yellow lines) This uses the *Hough Transform* mentioned above.
 1. Look for column headers for each of the grids on the right side. We will use both a mean pixel brightness and the *Probabilistic Hough Transform* for this.
 1. Scan the grids for slashes. We only look at rows that have a row label and columns that have a column header. The scan uses the *Probabilistic Hough Transform* tuned to look for forward slashes.
 1. Output the results to the output image file and to the CSV file.
