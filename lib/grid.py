@@ -159,5 +159,5 @@ class Grid:
 
         # Set the first 31 columns to be a label
         first_label = [i for i, val in enumerate(labels) if val][0]
-        self.col_labels = [(i >= first_label and i < first_label + 31)
+        self.col_labels = [(first_label <= i < first_label + 31)
                            for i, _ in enumerate(labels)]

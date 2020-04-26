@@ -183,7 +183,7 @@ def init_csv_file(csv_path):
         writer = csv.writer(csv_file)
         header = ['file_name', 'chart_in_file',
                   'year', 'month', 'row_no', 'bird_species']
-        header += [i for i in range(1, 32)]
+        header += list(range(1, 32))
         writer.writerow(header)
 
 
