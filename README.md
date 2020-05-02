@@ -1,3 +1,5 @@
+# This repository has been archived.
+
 # Extract images of Boyd's Bird Journal into computer readable form
 
 ## Summary
