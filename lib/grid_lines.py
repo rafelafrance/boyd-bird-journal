@@ -5,6 +5,7 @@
 
 import numpy as np
 from skimage.transform import hough_line, hough_line_peaks
+
 from lib.util import too_close
 
 

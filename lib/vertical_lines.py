@@ -21,5 +21,5 @@ class Vertical(GridLines):
 
     @staticmethod
     def sort_key(key):
-        """Verical lines are sorted by their distance on the x-axis."""
+        """Vertical lines are sorted by their distance on the x-axis."""
         return key[0][0]

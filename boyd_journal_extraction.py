@@ -2,14 +2,16 @@
 
 # pylint: disable=no-member, invalid-name
 
-import os
 import csv
 import glob
+import os
+
 import matplotlib.pyplot as plt
 from matplotlib import patches
-from lib.util import intersection, extend_line, Crop
-from lib.grid import Grid
+
 from lib.cell import Cell
+from lib.grid import Grid
+from lib.util import Crop, extend_line, intersection
 
 
 def get_left_side(grid):
@@ -123,7 +125,7 @@ def color_grid_cells(month, month_idx, ax, base_name, writer):
     """
     for row_idx, cell_row in enumerate(month.cells[1:]):
         csv_row = [base_name, month_idx + 1, '', '', row_idx + 1, '']
-        csv_cells = ['' for i in range(31)]
+        csv_cells = ['' for _ in range(31)]
         day = -1
         for col, cell in enumerate(cell_row):
             if month.col_labels[col]:

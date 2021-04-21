@@ -2,12 +2,12 @@
 
 # pylint: disable=too-many-instance-attributes
 
-from skimage import io
-from skimage import util
-from lib.util import Offset, Crop
-from lib.horizontal_lines import Horizontal
-from lib.vertical_lines import Vertical
+from skimage import io, util
+
 from lib.cell import Cell
+from lib.horizontal_lines import Horizontal
+from lib.util import Crop, Offset
+from lib.vertical_lines import Vertical
 
 
 class Grid:
@@ -97,6 +97,8 @@ class Grid:
         """Build the grid cells from the grid lines."""
         top_cells = []
         bottom_cells = []
+        cells = []
+
         for row_idx, (top, bottom) in enumerate(zip(self.horiz.lines[:-1],
                                                     self.horiz.lines[1:])):
             if row_idx < self.mid_point:

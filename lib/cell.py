@@ -6,6 +6,7 @@
 import numpy as np
 from skimage import util
 from skimage.transform import probabilistic_hough_line
+
 from lib.util import Crop, Offset, intersection
 
 
